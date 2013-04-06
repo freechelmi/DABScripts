@@ -1,0 +1,173 @@
+#!/bin/bash
+
+echo ...........................................
+echo --------------    Dab Mod    --------------
+echo ...........................................
+
+echo Setting the python lib PATH
+export PYTHONPATH=$PYTHONPATH:/usr/lib/python2.7/dist-packages
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/bin:/usr/local/bin
+
+
+# Mod + UHD
+FREQ=178352000
+DAB_SAMPLE_RATE=3200000
+TRANSITION=300000
+CUTOFF=600000
+GAIN_HF=20
+DIGITAL_GAIN=30u
+
+
+# MUX
+DAB_MUX_BR=96
+MUX_PROTECTION=3
+language=15   # english=9, french=15
+
+# Buffer
+BUFFER_MUX=32m
+BUFFER_FLUX=300k
+
+# Player
+LOOP=1000000000000000000000
+
+# Toolame
+TOOLAME_BITRATE=${DAB_MUX_BR}
+
+
+RADIO_FLUX_1=/home/radiog/Documents/MP3/flux-1.mp3
+RADIO_NAME_1="Flux-1"
+RADIO_label_1="c'est la Radio 1"
+#RADIO_FLUX_1=http://stream.radioneo.org:8000/
+#RADIO_NAME_1="Néo"
+
+
+RADIO_FLUX_2=/home/radiog/Documents/MP3/flux-2.mp3
+RADIO_NAME_2="Flux-2"
+RADIO_LABEL_2="c'est la Radio 2"
+#RADIO_FLUX_2=http://sv6.vestaradio.com:7180/
+#RADIO_NAME_2="Lina"
+
+RADIO_FLUX_3=/home/radiog/Documents/MP3/flux-3.mp3
+RADIO_NAME_3="Flux-3"
+RADIO_LABEL_3="c'est la Radio 3"
+#RADIO_FLUX_3=http://91.121.6.105:8000/rjm.m3u
+#RADIO_NAME_3="JM"
+
+RADIO_FLUX_4=/home/radiog/Documents/MP3/flux-4.mp3
+RADIO_NAME_4="Flux-4"
+RADIO_LABEL_4="c'est la Radio 4"
+#RADIO_FLUX_4=http://www.radiogalere.org:8080/galere.mp3
+#RADIO_NAME_4="Galère"
+
+RADIO_FLUX_5=/home/radiog/Documents/MP3/flux-5.mp3
+RADIO_NAME_5="Flux-5"
+RADIO_LABEL_5="c'est la Radio 5"
+#RADIO_FLUX_5=http://live.radiogrenouille.com/live.m3u
+#RADIO_NAME_5="Grenouille"
+
+RADIO_FLUX_6=/home/radiog/Documents/MP3/flux-6.mp3
+RADIO_NAME_6="Flux-6"
+RADIO_LABEL_6="c'est la Radio 6"
+#RADIO_FLUX_6=http://str30.creacast.com/rcom
+#RADIO_NAME_6="Culture-Outre-Mer"
+
+RADIO_FLUX_7=/home/radiog/Documents/MP3/flux-7.mp3
+RADIO_NAME_7="Flux-7"
+RADIO_LABEL_7="c'est la Radio 7"
+#RADIO_FLUX_7=----
+#RADIO_NAME_7="Garlaban"
+
+RADIO_FLUX_8=/home/radiog/Documents/MP3/flux-8.mp3
+RADIO_NAME_8="Flux-8"
+RADIO_LABEL_8="c'est la Radio 8"
+#RADIO_FLUX_8=http://213.251.135.149:8000/radio-zinzine-live
+#RADIO_NAME_8="Zinzine"
+
+RADIO_FLUX_9=/home/radiog/Documents/MP3/flux-9.mp3
+RADIO_NAME_9="Flux-9"
+RADIO_LABEL_9="c'est la Radio 9"
+# RADIO_FLUX_9=http://radioayp.streamakaci.com/
+# RADIO_NAME_9="AYP FM"
+
+echo KILL session + rm FIFO
+
+killall mpg123
+killall toolame
+killall CRC-DabMux
+killall netcat
+killall mbuffer
+killall crc-dabmod
+kill $(ps aux | grep python /usr/local/bin/coinwap_uhd_full3.py | awk '{ print $2 }')
+#kill $(ps aux | grep python /usr/local/bin/simple_sender.py | awk '{ print $2 }')
+#killall python /usr/local/bin/coinwap_uhd_full3.py
+
+echo SUP FIFO
+rm -f ./fifoer/fifo*
+
+sleep 1
+
+echo Creating FIFO
+
+for id in 1 2 3 4 5 6 7 8 9; do
+    [ -e fifo$id ] || mkfifo -m 664 fifoer/fifo$id
+done 
+
+sleep 1
+
+
+echo playing radios 
+
+#for id in 1; do
+for id in 1 2 3 4 5 6 7 8 9; do
+  echo "Reading Radio ${id}"
+	RADIO_FLUX_STR="RADIO_FLUX_${id}"
+	RADIO_FLUX=${!RADIO_FLUX_STR}
+	#RADIO_FLUX=${RADIO_FLUX_1}
+	FIFO="./fifoer/fifo$id"
+	echo "using radioflux : ${RADIO_FLUX} and fifo : ${FIFO}"
+  	#mpg123 -r 48000 --loop ${LOOP} -s ${RADIO_FLUX} |toolame -s 48 -D 4 -b ${TOOLAME_BITRATE} /dev/stdin ${FIFO} &
+	crc-dabplus -i souphttpsrc://location=${RADIO_FLUX} -g -m -c 2 -b ${TOOLAME_BITRATE} -r 48 -o file:///dev/stdout |mbuffer -m 100k -P 100 >${FIFO} &
+
+done
+#/dev/stdout |mbuffer -m ${BUFFER_FLUX} -P 25 >
+sleep 3
+#exit 0
+
+echo starting Dab-mux
+CRC-DabMux -L "SDN" \
+-F ./fifoer/fifo1 -k -b ${DAB_MUX_BR} -i 1 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo2 -k -b ${DAB_MUX_BR} -i 2 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo3 -k -b ${DAB_MUX_BR} -i 3 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo4 -k -b ${DAB_MUX_BR} -i 4 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo5 -k -b ${DAB_MUX_BR} -i 5 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo6 -k -b ${DAB_MUX_BR} -i 6 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo7 -k -b ${DAB_MUX_BR} -i 7 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo8 -k -b ${DAB_MUX_BR} -i 8 -p ${MUX_PROTECTION} \
+-F ./fifoer/fifo9 -k -b ${DAB_MUX_BR} -i 9 -p ${MUX_PROTECTION} \
+-S -L ${RADIO_NAME_1} -C -i 1 \
+-S -L ${RADIO_NAME_2} -C -i 2 \
+-S -L ${RADIO_NAME_3} -C -i 3 \
+-S -L ${RADIO_NAME_4} -C -i 4 \
+-S -L ${RADIO_NAME_5} -C -i 5 \
+-S -L ${RADIO_NAME_6} -C -i 6 \
+-S -L ${RADIO_NAME_7} -C -i 7 \
+-S -L ${RADIO_NAME_8} -C -i 8 \
+-S -L ${RADIO_NAME_9} -C -i 9 \
+-O fifo:///dev/stdout|\
+crc-dabmod -f -g1 -r${DAB_SAMPLE_RATE} |\
+# mbuffer -m ${BUFFER_MUX} -P 25 |\
+#python /usr/local/bin/simple_sender.py -f ${FREQ} -r ${DAB_SAMPLE_RATE} --rfgain ${GAIN_HF} --dgain ${DIGITAL_GAIN}
+python /usr/local/bin/coinwap_uhd_full3.py -f ${FREQ} -r ${DAB_SAMPLE_RATE} -g ${GAIN_HF} --enable-filter=1
+
+
+#FREQ=178352000
+#DAB_SAMPLE_RATE=3200000
+#TRANSITION=300000
+#CUTOFF=600000
+#GAIN_HF=20
+#DIGITAL_GAIN=30u
+
+
+
+
+#exit 0
