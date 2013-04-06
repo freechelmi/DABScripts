@@ -30,64 +30,54 @@ BUFFER_FLUX=300k
 # Player
 LOOP=1000000000000000000000
 
-# Toolame
-TOOLAME_BITRATE=${DAB_MUX_BR}
+# crc_dab+
+DAB_BITRATE=${DAB_MUX_BR}
 
 
 RADIO_FLUX_1=/home/radiog/Documents/MP3/flux-1.mp3
 RADIO_NAME_1="Flux-1"
 RADIO_label_1="c'est la Radio 1"
-#RADIO_FLUX_1=http://stream.radioneo.org:8000/
-#RADIO_NAME_1="Néo"
 
 
 RADIO_FLUX_2=/home/radiog/Documents/MP3/flux-2.mp3
 RADIO_NAME_2="Flux-2"
 RADIO_LABEL_2="c'est la Radio 2"
-#RADIO_FLUX_2=http://sv6.vestaradio.com:7180/
-#RADIO_NAME_2="Lina"
+
 
 RADIO_FLUX_3=/home/radiog/Documents/MP3/flux-3.mp3
 RADIO_NAME_3="Flux-3"
 RADIO_LABEL_3="c'est la Radio 3"
-#RADIO_FLUX_3=http://91.121.6.105:8000/rjm.m3u
-#RADIO_NAME_3="JM"
+
 
 RADIO_FLUX_4=/home/radiog/Documents/MP3/flux-4.mp3
 RADIO_NAME_4="Flux-4"
 RADIO_LABEL_4="c'est la Radio 4"
-#RADIO_FLUX_4=http://www.radiogalere.org:8080/galere.mp3
-#RADIO_NAME_4="Galère"
+
 
 RADIO_FLUX_5=/home/radiog/Documents/MP3/flux-5.mp3
 RADIO_NAME_5="Flux-5"
 RADIO_LABEL_5="c'est la Radio 5"
-#RADIO_FLUX_5=http://live.radiogrenouille.com/live.m3u
-#RADIO_NAME_5="Grenouille"
+
 
 RADIO_FLUX_6=/home/radiog/Documents/MP3/flux-6.mp3
 RADIO_NAME_6="Flux-6"
 RADIO_LABEL_6="c'est la Radio 6"
-#RADIO_FLUX_6=http://str30.creacast.com/rcom
-#RADIO_NAME_6="Culture-Outre-Mer"
+
 
 RADIO_FLUX_7=/home/radiog/Documents/MP3/flux-7.mp3
 RADIO_NAME_7="Flux-7"
 RADIO_LABEL_7="c'est la Radio 7"
-#RADIO_FLUX_7=----
-#RADIO_NAME_7="Garlaban"
+
 
 RADIO_FLUX_8=/home/radiog/Documents/MP3/flux-8.mp3
 RADIO_NAME_8="Flux-8"
 RADIO_LABEL_8="c'est la Radio 8"
-#RADIO_FLUX_8=http://213.251.135.149:8000/radio-zinzine-live
-#RADIO_NAME_8="Zinzine"
+
 
 RADIO_FLUX_9=/home/radiog/Documents/MP3/flux-9.mp3
 RADIO_NAME_9="Flux-9"
 RADIO_LABEL_9="c'est la Radio 9"
-# RADIO_FLUX_9=http://radioayp.streamakaci.com/
-# RADIO_NAME_9="AYP FM"
+
 
 echo KILL session + rm FIFO
 
@@ -125,9 +115,10 @@ for id in 1 2 3 4 5 6 7 8 9; do
 	#RADIO_FLUX=${RADIO_FLUX_1}
 	FIFO="./fifoer/fifo$id"
 	echo "using radioflux : ${RADIO_FLUX} and fifo : ${FIFO}"
-  	#mpg123 -r 48000 --loop ${LOOP} -s ${RADIO_FLUX} |toolame -s 48 -D 4 -b ${TOOLAME_BITRATE} /dev/stdin ${FIFO} &
-	crc-dabplus -i souphttpsrc://location=${RADIO_FLUX} -g -m -c 2 -b ${TOOLAME_BITRATE} -r 48 -o file:///dev/stdout |mbuffer -m 100k -P 100 >${FIFO} &
-
+  	crc-dabplus -i souphttpsrc://location=${RADIO_FLUX} -g -m -c 2 -b ${DAB_BITRATE} -r 48 -o file:///dev/stdout |mbuffer -m 100k -P 100 >${FIFO} &
+	
+	#mpg123 -r 48000 --loop ${LOOP} -s ${RADIO_FLUX} |toolame -s 48 -D 4 -b ${TOOLAME_BITRATE} /dev/stdin ${FIFO} &
+	
 done
 #/dev/stdout |mbuffer -m ${BUFFER_FLUX} -P 25 >
 sleep 3
